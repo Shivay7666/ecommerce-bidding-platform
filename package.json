@@ -1,0 +1,36 @@
+{
+  "name": "ecommerce-bidding-platform",
+  "version": "1.0.0",
+  "description": "A full-stack e-commerce platform with bidding and bartering features",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:preview": "cd frontend && npm run preview",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "build": "npm run frontend:build"
+  },
+  "keywords": [
+    "ecommerce",
+    "bidding",
+    "bartering",
+    "marketplace",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "Shiva",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shivay7666/ecommerce-bidding-platform.git"
+  }
+}
