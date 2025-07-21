@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Clock, Tag } from 'lucide-react';
+import { Clock, Tag, X, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { uploadAPI } from '../utils/api';
 
 const CreateListing = () => {
   const { user, isAuthenticated } = useAuth();
@@ -19,7 +20,10 @@ const CreateListing = () => {
     auctionDuration: '7'
   });
   const [images, setImages] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isAuthenticated) {
     navigate('/login');
@@ -64,14 +68,87 @@ const CreateListing = () => {
   };
 
   const handleImageUpload = () => {
-    // Mock image upload - in a real app, this would handle file uploads
-    const sampleImages = [
-      'https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/267320/pexels-photo-267320.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/159751/book-address-book-learning-learn-159751.jpeg?auto=compress&cs=tinysrgb&w=600'
-    ];
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
     
-    setImages([sampleImages[Math.floor(Math.random() * sampleImages.length)]]);
+    // Validate file types and sizes
+    const validFiles = fileArray.filter(file => {
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+      
+      if (!isValidType) {
+        alert(`${file.name} is not a valid image file.`);
+        return false;
+      }
+      if (!isValidSize) {
+        alert(`${file.name} is too large. Maximum size is 5MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Limit to 5 images total
+    const totalFiles = images.length + validFiles.length;
+    if (totalFiles > 5) {
+      alert(`You can only upload a maximum of 5 images. You currently have ${images.length} images.`);
+      return;
+    }
+
+    setSelectedFiles(validFiles);
+    setUploadingImages(true);
+
+    try {
+      console.log('Starting upload for files:', validFiles);
+      const uploadResult = await uploadAPI.uploadImages(validFiles);
+      console.log('Upload successful:', uploadResult);
+      const newImageUrls = uploadResult.files.map(filename => `http://localhost:5000${filename}`);
+      setImages(prev => [...prev, ...newImageUrls]);
+      
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      let errorMessage = 'Failed to upload images. Please try again.';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setUploadingImages(false);
+      setSelectedFiles([]);
+    }
+  };
+
+  const removeImage = async (index: number) => {
+    const imageUrl = images[index];
+    const filename = imageUrl.split('/').pop();
+    
+    try {
+      if (filename) {
+        await uploadAPI.deleteImage(filename);
+      }
+      setImages(prev => prev.filter((_, i) => i !== index));
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      // Still remove from UI even if backend deletion fails
+      setImages(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,35 +276,67 @@ const CreateListing = () => {
             {/* Images */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Images
+                Images (Max 5 images, 5MB each)
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {images.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                {images.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                     {images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Product ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
+                      <div key={index} className="relative group">
+                        <img
+                          src={image}
+                          alt={`Product ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <>
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
-                      Click to upload images or drag and drop
-                    </p>
-                  </>
                 )}
-                <button
-                  type="button"
-                  onClick={handleImageUpload}
-                  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {images.length > 0 ? 'Change Images' : 'Upload Images'}
-                </button>
+                
+                <div className="text-center">
+                  {images.length === 0 && (
+                    <>
+                      <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        Upload product images (JPEG, PNG, GIF, WebP)
+                      </p>
+                    </>
+                  )}
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={handleImageUpload}
+                    disabled={images.length >= 5 || uploadingImages}
+                    className={`mt-4 px-4 py-2 rounded-lg transition-colors ${
+                      images.length >= 5 || uploadingImages
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {uploadingImages 
+                      ? 'Uploading...' 
+                      : images.length === 0 
+                        ? 'Upload Images' 
+                        : `Add More Images (${images.length}/5)`
+                    }
+                  </button>
+                </div>
               </div>
             </div>
 

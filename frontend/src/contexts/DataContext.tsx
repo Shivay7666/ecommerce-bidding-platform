@@ -71,7 +71,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchProducts = async () => {
       setLoading(true);
       try {
+        console.log('Fetching products from API...');
         const response = await productAPI.getAllProducts();
+        console.log('API response:', response);
         if (response && response.products) {
           // Transform API response to match our interface format
           const formattedProducts = response.products.map((product: any) => ({
