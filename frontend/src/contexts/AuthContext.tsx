@@ -54,11 +54,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(
-        err.response?.data?.message || 
-        err.message || 
-        'Login failed'
-      );
+      let errorMessage = 'Login failed';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please check if the API is running.';
+      }
+      
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -75,11 +81,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (err: any) {
       console.error('Signup error:', err);
-      setError(
-        err.response?.data?.message || 
-        err.message || 
-        'Signup failed'
-      );
+      let errorMessage = 'Signup failed';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please check if the API is running.';
+      }
+      
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -92,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authAPI.updateProfile(userData);
       // The API response may be nested under 'user' or 'data.user' depending on backend
-      const updatedUser = response.user || response.data?.user || response;
+      const updatedUser = response.user || response;
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
       return true;

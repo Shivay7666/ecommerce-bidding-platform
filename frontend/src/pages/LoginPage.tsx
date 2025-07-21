@@ -10,6 +10,7 @@ const LoginPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -23,14 +24,18 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       const success = await login(formData.email, formData.password);
       if (success) {
         navigate('/');
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      setError(error.response?.data?.message || error.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +58,12 @@ const LoginPage = () => {
             Sign in to your account to continue trading
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">

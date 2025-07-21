@@ -111,7 +111,7 @@ const CreateListing = () => {
       console.log('Starting upload for files:', validFiles);
       const uploadResult = await uploadAPI.uploadImages(validFiles);
       console.log('Upload successful:', uploadResult);
-      const newImageUrls = uploadResult.files.map(filename => `http://localhost:5000${filename}`);
+      const newImageUrls = uploadResult.files.map(filename => `/api${filename}`);
       setImages(prev => [...prev, ...newImageUrls]);
       
       // Clear the file input

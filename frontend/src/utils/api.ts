@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.PROD 
   ? '/api' 
-  : 'http://localhost:5000/api';
+  : import.meta.env.VITE_API_URL || '/api';
 
 // TypeScript interfaces
 export interface User {
@@ -90,8 +90,18 @@ apiClient.interceptors.response.use(
     if (error.response) {
       console.error('API Error Response:', error.response.data);
       console.error('API Error Status:', error.response.status);
+      
+      // Handle specific error statuses
+      if (error.response.status === 401) {
+        // Unauthorized - clear token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     } else if (error.request) {
       console.error('API Error Request:', error.request);
+      // Network error or server not reachable
+      error.message = 'Unable to connect to server. Please check your internet connection.';
     } else {
       console.error('API Error Message:', error.message);
     }

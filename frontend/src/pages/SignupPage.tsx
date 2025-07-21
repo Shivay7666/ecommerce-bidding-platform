@@ -13,6 +13,7 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
@@ -27,19 +28,23 @@ const SignupPage = () => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     
     try {
       const success = await signup(formData.username, formData.email, formData.password);
       if (success) {
         navigate('/');
+      } else {
+        setError('Signup failed. Please try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      setError(error.response?.data?.message || error.message || 'Signup failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +67,12 @@ const SignupPage = () => {
             Join our community and start trading today
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
